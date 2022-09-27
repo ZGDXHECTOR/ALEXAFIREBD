@@ -44,19 +44,46 @@ namespace ALEXAFIREBD.Controllers
         // GET: Mantenedor
         public ActionResult Inicio()
         {
-            return View();
+            Dictionary<string, Contacto> lista = new Dictionary<string, Contacto>();
+            FirebaseResponse response = cliente.Get("contactos");
+
+            if (response.StatusCode == System.Net.HttpStatusCode.OK)
+                lista = JsonConvert.DeserializeObject<Dictionary<string, Contacto>>(response.Body);
+
+            List<Contacto> listaContacto = new List<Contacto>(); 
+
+            foreach (KeyValuePair<string,Contacto> elemento in lista)
+            {
+                listaContacto.Add(new Contacto()
+                {
+                    IdContacto = elemento.Key,
+                    Nombre = elemento.Value.Nombre,
+                    Correo = elemento.Value.Correo,
+                    Contraseña = elemento.Value.Contraseña
+                });
+            }
+
+            return View(listaContacto);
         }
         public ActionResult Crear()
         {
             return View();
         }
-        public ActionResult Editar()
+        public ActionResult Editar(string idcontacto)
         {
-            return View();
+
+            FirebaseResponse response = cliente.Get("contactos/" + idcontacto);
+
+            Contacto ocontacto = response.ResultAs<Contacto>();
+            ocontacto.IdContacto = idcontacto;
+
+            return View(ocontacto);
         }
-        public ActionResult Eliminar()
+        public ActionResult Eliminar(string idcontacto)
         {
-            return View();
+            FirebaseResponse response = cliente.Delete("contactos/" + idcontacto);
+
+            return RedirectToAction("Inicio", "Mantenedor");
         }
 
 
@@ -69,7 +96,7 @@ namespace ALEXAFIREBD.Controllers
 
             if(response.StatusCode == System.Net.HttpStatusCode.OK)
             {
-                return View();
+                return RedirectToAction("Inicio", "Mantenedor");
             }
             else
             {
@@ -80,6 +107,25 @@ namespace ALEXAFIREBD.Controllers
             
         }
 
+
+        [HttpPost]
+        public ActionResult Editar(Contacto oContacto)
+        {
+
+            string idcontacto = oContacto.IdContacto;
+            oContacto.IdContacto = null;
+
+            FirebaseResponse response = cliente.Update("contactos/" + idcontacto,oContacto);
+
+            if (response.StatusCode == System.Net.HttpStatusCode.OK)
+            {
+                return RedirectToAction("Inicio", "Mantenedor");
+            }
+            else
+            {
+                return View();
+            }
+        }
 
 
     }
